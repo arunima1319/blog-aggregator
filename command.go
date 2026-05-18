@@ -7,6 +7,7 @@ import (
 	"context"
 	"time"
 	"github.com/arunima1319/blog-aggregator/internal/database"
+
 )
 
 type command struct{ 
@@ -58,6 +59,7 @@ func handlerLogin(s *state, cmd command) error{
 func handlerRegister(s *state, cmd command) error{
 	if len(cmd.arguments) == 0{
 		return fmt.Errorf("no username argument passed")
+		os.Exit(1)
 	}
 	name := cmd.arguments[0]
 
@@ -108,5 +110,53 @@ func handlerUsers(s *state, cmd command) error {
 			fmt.Printf("* %s\n", name)
 		}
 	}
+	return nil
+}
+
+func handlerAgg(_ *state, cmd command) error{ 
+	feed, err := fetchFeed(context.Background(), "https://www.wagslane.dev/index.xml")
+	if err!= nil{
+		return fmt.Errorf("%v", err)
+	}
+
+	fmt.Printf("%v", *feed)
+	return nil
+	
+}
+
+func handlerAddfeed(s *state, cmd command) error{
+	if len(cmd.arguments) < 2{ 
+		return fmt.Errorf("not enough arguments passed")
+		os.Exit(1)
+	} 
+	nameFeed := cmd.arguments[0]
+	url := cmd.arguments[1]
+
+	user, err := s.db.GetUser(context.Background(), s.pointerConfig.CurrentUserName)
+	if err!= nil{ 
+		return fmt.Errorf("error in getting current user: %v", err)
+	}	
+
+	userUUID := uuid.NullUUID{ 
+		UUID : user.ID, 
+		Valid: true, 
+	}
+
+	feed, err := s.db.CreateFeed(
+		context.Background(), 
+		database.CreateFeedParams{
+			ID : uuid.New(),
+			CreatedAt : time.Now(),
+			UpdatedAt : time.Now(),
+			Name : nameFeed,
+			Url: url, 
+			UserID : userUUID,
+
+	})
+	if err!= nil{
+		return fmt.Errorf("error in creating new feed: %v", err)
+	}
+
+	fmt.Println("%v", feed)
 	return nil
 }

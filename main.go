@@ -33,6 +33,8 @@ func main() {
 	newCommandsSet.register("register", handlerRegister)
 	newCommandsSet.register("reset", handlerReset)
 	newCommandsSet.register("users", handlerUsers)
+	newCommandsSet.register("agg", handlerAgg)
+	newCommandsSet.register("addfeed", handlerAddfeed)
 
 	argsEntered := os.Args 
 
