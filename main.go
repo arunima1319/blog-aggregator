@@ -1,9 +1,13 @@
 package main
 
+import _ "github.com/lib/pq"
+
 import (
 	"fmt"
 	"os"
+	"database/sql"
 	"github.com/arunima1319/blog-aggregator/internal/config"
+	"github.com/arunima1319/blog-aggregator/internal/database"
 )
 
 func main() {
@@ -11,7 +15,13 @@ func main() {
 	if err!= nil{
 		fmt.Println(err)
 	}
+
+	db, err := sql.Open("postgres", cfg.DbURL)
+	dbQueries := database.New(db)
+
+
 	currentState := state{
+		db : dbQueries,
 		pointerConfig: &cfg,
 	}
 
@@ -20,6 +30,9 @@ func main() {
 	}
 
     newCommandsSet.register("login", handlerLogin)
+	newCommandsSet.register("register", handlerRegister)
+	newCommandsSet.register("reset", handlerReset)
+	newCommandsSet.register("users", handlerUsers)
 
 	argsEntered := os.Args 
 
