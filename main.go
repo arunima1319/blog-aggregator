@@ -34,7 +34,11 @@ func main() {
 	newCommandsSet.register("reset", handlerReset)
 	newCommandsSet.register("users", handlerUsers)
 	newCommandsSet.register("agg", handlerAgg)
-	newCommandsSet.register("addfeed", handlerAddfeed)
+	newCommandsSet.register("addfeed", middlewareLoggedIn(handlerAddfeed))
+	newCommandsSet.register("feeds", handlerFeeds)
+	newCommandsSet.register("follow", middlewareLoggedIn(handlerFollow))
+	newCommandsSet.register("following", middlewareLoggedIn(handlerFollowing))
+	newCommandsSet.register("unfollow", middlewareLoggedIn(handlerUnfollow))
 
 	argsEntered := os.Args 
 
@@ -66,6 +70,6 @@ func main() {
 	if err!= nil{
 		fmt.Println(err)
 	}else{
-		fmt.Printf("db_url: %s, current_user_name: %s\n", cfg.DbURL, cfg.CurrentUserName)
+		//fmt.Printf("db_url: %s, current_user_name: %s\n", cfg.DbURL, cfg.CurrentUserName)
 	}
 }

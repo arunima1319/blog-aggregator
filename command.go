@@ -124,7 +124,7 @@ func handlerAgg(_ *state, cmd command) error{
 	
 }
 
-func handlerAddfeed(s *state, cmd command) error{
+func handlerAddfeed(s *state, cmd command, user database.User) error{
 	if len(cmd.arguments) < 2{ 
 		return fmt.Errorf("not enough arguments passed")
 		os.Exit(1)
@@ -132,10 +132,13 @@ func handlerAddfeed(s *state, cmd command) error{
 	nameFeed := cmd.arguments[0]
 	url := cmd.arguments[1]
 
+	//instead of getting the user like this, we are just using the user that has been passed into the function
+	/*
 	user, err := s.db.GetUser(context.Background(), s.pointerConfig.CurrentUserName)
 	if err!= nil{ 
 		return fmt.Errorf("error in getting current user: %v", err)
 	}	
+	*/
 
 	userUUID := uuid.NullUUID{ 
 		UUID : user.ID, 
@@ -157,6 +160,114 @@ func handlerAddfeed(s *state, cmd command) error{
 		return fmt.Errorf("error in creating new feed: %v", err)
 	}
 
+	followCommand := command{name: "follow", arguments: []string{url}}
+	err = handlerFollow(s, followCommand, user)
+	if err!=nil{
+		return fmt.Errorf("error in following feed: %v", err)
+	}
+
 	fmt.Println("%v", feed)
+
 	return nil
+}
+
+func handlerFeeds(s *state, cmd command) error{ 
+
+	feeds, err := s.db.ListFeeds(context.Background())
+	if err!= nil{
+		return fmt.Errorf("%v", err)
+	}
+
+	for _, feed := range feeds{
+
+		if feed.UserID.Valid{
+			userId := feed.UserID.UUID
+			user, err := s.db.GetUserFromID(context.Background(), userId)
+			if err!= nil{
+				return fmt.Errorf("%v", err)
+			}else{
+				fmt.Printf("name: %s, url: %s, user: %s\n", feed.Name, feed.Url, user.Name)
+			}
+		}else{
+			return fmt.Errorf("the user ID was Null")
+		}
+	
+	}
+
+	return nil 
+	
+}
+
+
+func handlerFollow(s *state, cmd command, user database.User) error{
+
+	if len(cmd.arguments) == 0{
+		return fmt.Errorf("no url passed")
+	}
+
+	urlFeed := cmd.arguments[0]
+	feed, err := s.db.GetFeed(context.Background(), urlFeed)
+	if err!= nil{
+		return fmt.Errorf("%v", err)
+	}
+
+	feedFollowRow, err := s.db.CreateFeedFollow(
+		context.Background(), 
+		database.CreateFeedFollowParams{
+			ID: uuid.New(),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			UserID: user.ID,
+			FeedID: feed.ID,
+	})
+	if err!=nil{
+		return fmt.Errorf("%v", err)
+	}
+
+	fmt.Printf("feed: %s, user: %s", feedFollowRow.FeedName, feedFollowRow.UserName)
+
+	return nil
+}
+
+func handlerFollowing(s *state, cmd command, user database.User) error{ 
+
+
+	feedFollowsForUser, err := s.db.GetFeedFollowsForUser(context.Background(), user.ID)
+	if err!= nil{
+		return fmt.Errorf("%v", err)
+	}
+
+	for _, feedFollowForUser := range feedFollowsForUser{
+		fmt.Printf("%s\n", feedFollowForUser.FeedName)
+	}
+
+	return nil
+
+}
+
+func handlerUnfollow(s *state, cmd command, user database.User) error{ 
+
+	if len(cmd.arguments) == 0{
+		return fmt.Errorf("no url passed")
+	}
+	urlFeed := cmd.arguments[0]
+
+	feed, err := s.db.GetFeed(context.Background(), urlFeed)
+	if err!= nil{
+		return fmt.Errorf("%v", err)
+	}
+
+	err = s.db.DeleteFeedFollows(
+		context.Background(), 
+		database.DeleteFeedFollowsParams{
+			FeedID: feed.ID, 
+			UserID: user.ID,
+	})
+
+	if err!= nil{
+		return fmt.Errorf("%v", err)
+	}
+
+	return nil
+
 }
