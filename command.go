@@ -113,13 +113,32 @@ func handlerUsers(s *state, cmd command) error {
 	return nil
 }
 
-func handlerAgg(_ *state, cmd command) error{ 
+func handlerAgg(s *state, cmd command) error{ 
+	
+	if len(cmd.arguments) == 0{
+		return fmt.Errorf("no argument for time between requests")
+	}
+	
+	timeBetweenRequests, err := time.ParseDuration(cmd.arguments[0])
+	if err!= nil{
+		return fmt.Errorf("%v", err)
+	}
+
+	fmt.Printf("collecting feeds every %s \n\n", cmd.arguments[0])
+
+	ticker := time.NewTicker(timeBetweenRequests)
+	for ; ; <- ticker.C{
+		scrapeFeeds(s)
+	}
+
+	/*
 	feed, err := fetchFeed(context.Background(), "https://www.wagslane.dev/index.xml")
 	if err!= nil{
 		return fmt.Errorf("%v", err)
 	}
 
 	fmt.Printf("%v", *feed)
+	*/
 	return nil
 	
 }
