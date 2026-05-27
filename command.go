@@ -7,6 +7,7 @@ import (
 	"context"
 	"time"
 	"github.com/arunima1319/blog-aggregator/internal/database"
+	"strconv"
 
 )
 
@@ -187,6 +188,29 @@ func handlerAddfeed(s *state, cmd command, user database.User) error{
 
 	fmt.Println("%v", feed)
 
+	return nil
+}
+
+func handlerBrowse(s *state, cmd command) error{ 
+
+	
+	limitParameter := 2 
+	ptrLimit := &limitParameter
+	if len(cmd.arguments) > 0{
+		limit, err := strconv.Atoi(cmd.arguments[0])
+		if err!= nil{
+			return fmt.Errorf("Argument is not an integer")
+		}
+		*ptrLimit = limit
+	}
+
+	posts, err := s.db.GetPostsForUser(context.Background(), int32(*ptrLimit))
+	if err!= nil{
+		return fmt.Errorf("%v", err)
+	}
+	for _, post := range posts{
+		fmt.Printf("%s : %v\n\n", post.Title, post.Description)
+	}
 	return nil
 }
 
